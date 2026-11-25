@@ -11,8 +11,12 @@
         <aside class="sidebar">
             <div class="brand">Task Manager</div>
             <nav class="nav">
-                <a href="{{ route('tasks.index') }}" class="nav-item active">My Tasks</a>
+                <a href="{{ route('tasks.index') }}" class="nav-item {{ request()->is('tasks*') ? 'active' : '' }}">My Tasks</a>
             </nav>
+            <form method="POST" action="{{ route('logout') }}" class="logout-form">
+                @csrf
+                <button type="submit" class="logout-button">Log out</button>
+            </form>
         </aside>
 
         <main class="main-content">
