@@ -72,4 +72,5 @@ All endpoints require an authenticated session and use CSRF protection for write
 
 ## Design Credits
 
-The layout and styling were created specifically for this project using custom plain CSS without any external UI template or design kit.
+- Delete confirmation dialog layout adapted from the [Flowbite Pop-up Modal](https://flowbite.com/docs/components/modal/) component (MIT License)
+- Remaining layout and styling were created specifically for this project using custom plain CSS.

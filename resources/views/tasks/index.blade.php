@@ -46,5 +46,18 @@
             <span id="pagination-info" class="pagination-info"></span>
             <x-button variant="secondary" id="next-page-btn">Next</x-button>
         </div>
+
+        <div id="delete-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
+            <div class="modal-dialog">
+                <h2 id="delete-modal-title" class="modal-title">Delete Task</h2>
+                <p id="delete-modal-message" class="modal-message">
+                    Are you sure you want to delete this task? This action cannot be undone.
+                </p>
+                <div class="modal-actions">
+                    <x-button variant="secondary" id="cancel-delete-btn">Cancel</x-button>
+                    <x-button id="confirm-delete-btn">Delete</x-button>
+                </div>
+            </div>
+        </div>
     </div>
 @endsection

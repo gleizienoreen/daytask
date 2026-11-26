@@ -26,6 +26,21 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    function isValidDateString(value) {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+            return false;
+        }
+
+        const [year, month, day] = value.split('-').map(Number);
+        const date = new Date(year, month - 1, day);
+
+        return (
+            date.getFullYear() === year &&
+            date.getMonth() === month - 1 &&
+            date.getDate() === day
+        );
+    }
+
     function showAlert(container, type, messages) {
         if (!container) {
             return;
@@ -50,6 +65,34 @@ document.addEventListener('DOMContentLoaded', () => {
         container.innerHTML = '';
     }
 
+    function showFieldError(form, field, message) {
+        const errorEl = form.querySelector(`[data-error-for="${field}"]`);
+        const inputEl = form.querySelector(`[name="${field}"]`);
+
+        if (errorEl) {
+            errorEl.textContent = message;
+            errorEl.classList.remove('hidden');
+        }
+
+        if (inputEl) {
+            inputEl.classList.add('input-error');
+        }
+    }
+
+    function clearFieldError(form, field) {
+        const errorEl = form.querySelector(`[data-error-for="${field}"]`);
+        const inputEl = form.querySelector(`[name="${field}"]`);
+
+        if (errorEl) {
+            errorEl.textContent = '';
+            errorEl.classList.add('hidden');
+        }
+
+        if (inputEl) {
+            inputEl.classList.remove('input-error');
+        }
+    }
+
     function clearFieldErrors(form) {
         form.querySelectorAll('.field-error').forEach((el) => {
             el.textContent = '';
@@ -61,23 +104,58 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    function validateDueDate(form) {
+        const dueDateInput = form.querySelector('#due_date');
+        if (!dueDateInput) {
+            return true;
+        }
+
+        const value = dueDateInput.value.trim();
+
+        if (value === '') {
+            showFieldError(form, 'due_date', 'The due date field is required.');
+            return false;
+        }
+
+        if (!isValidDateString(value)) {
+            showFieldError(form, 'due_date', 'Please enter a valid due date.');
+            return false;
+        }
+
+        clearFieldError(form, 'due_date');
+        return true;
+    }
+
+    function attachDueDateValidation(form) {
+        const dueDateInput = form.querySelector('#due_date');
+        if (!dueDateInput) {
+            return;
+        }
+
+        dueDateInput.addEventListener('invalid', (event) => {
+            event.preventDefault();
+            validateDueDate(form);
+            dueDateInput.focus();
+        });
+
+        dueDateInput.addEventListener('input', () => {
+            if (dueDateInput.value.trim() !== '') {
+                validateDueDate(form);
+            }
+        });
+    }
+
     function showFormErrors(form, alertBox, data, fallbackMessage) {
         if (data && data.errors) {
             const unmapped = [];
 
             Object.entries(data.errors).forEach(([field, messages]) => {
                 const errorEl = form.querySelector(`[data-error-for="${field}"]`);
-                const inputEl = form.querySelector(`[name="${field}"]`);
 
                 if (errorEl) {
-                    errorEl.textContent = messages[0];
-                    errorEl.classList.remove('hidden');
+                    showFieldError(form, field, messages[0]);
                 } else {
                     unmapped.push(...messages);
-                }
-
-                if (inputEl) {
-                    inputEl.classList.add('input-error');
                 }
             });
 
@@ -130,15 +208,36 @@ document.addEventListener('DOMContentLoaded', () => {
         const prevBtn = document.getElementById('prev-page-btn');
         const nextBtn = document.getElementById('next-page-btn');
         const paginationInfo = document.getElementById('pagination-info');
+        const deleteModal = document.getElementById('delete-modal');
+        const deleteModalMessage = document.getElementById('delete-modal-message');
+        const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
+        const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
 
         let currentPage = 1;
         let lastPage = 1;
         let searchTimer = null;
+        let pendingDeleteId = null;
 
         const savedMessage = sessionStorage.getItem('task_success');
         if (savedMessage) {
             showAlert(alertBox, 'success', savedMessage);
             sessionStorage.removeItem('task_success');
+        }
+
+        function openDeleteModal(taskId, taskTitle) {
+            pendingDeleteId = taskId;
+            deleteModalMessage.textContent = taskTitle
+                ? `Are you sure you want to delete "${taskTitle}"? This action cannot be undone.`
+                : 'Are you sure you want to delete this task? This action cannot be undone.';
+            confirmDeleteBtn.disabled = false;
+            deleteModal.classList.remove('hidden');
+            cancelDeleteBtn.focus();
+        }
+
+        function closeDeleteModal() {
+            pendingDeleteId = null;
+            confirmDeleteBtn.disabled = false;
+            deleteModal.classList.add('hidden');
         }
 
         async function loadTasks(page = 1) {
@@ -222,7 +321,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <td class="cell-nowrap">
                                 <div class="table-actions">
                                     <a href="/tasks/${task.id}/edit" class="btn-link">Edit</a>
-                                    <button type="button" class="btn-delete" data-delete-id="${task.id}">Delete</button>
+                                    <button type="button" class="btn-delete" data-delete-id="${task.id}" data-delete-title="${escapeHtml(task.title)}">Delete</button>
                                 </div>
                             </td>
                         </tr>
@@ -274,8 +373,32 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const taskId = deleteBtn.getAttribute('data-delete-id');
-            if (confirm('Are you sure you want to delete this task?')) {
-                deleteTask(taskId);
+            const taskTitle = deleteBtn.getAttribute('data-delete-title') || '';
+            openDeleteModal(taskId, taskTitle);
+        });
+
+        cancelDeleteBtn.addEventListener('click', closeDeleteModal);
+
+        confirmDeleteBtn.addEventListener('click', async () => {
+            if (!pendingDeleteId) {
+                return;
+            }
+
+            const taskId = pendingDeleteId;
+            confirmDeleteBtn.disabled = true;
+            await deleteTask(taskId);
+            closeDeleteModal();
+        });
+
+        deleteModal.addEventListener('click', (event) => {
+            if (event.target === deleteModal) {
+                closeDeleteModal();
+            }
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && !deleteModal.classList.contains('hidden')) {
+                closeDeleteModal();
             }
         });
 
@@ -314,6 +437,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const categorySelect = document.getElementById('category_id');
         const submitBtn = document.getElementById('submit-btn');
 
+        attachDueDateValidation(createForm);
+
         loadCategories(categorySelect, 'Select a category').catch(() => {
             showAlert(alertBox, 'error', 'Could not load categories. Please refresh the page.');
         });
@@ -322,6 +447,12 @@ document.addEventListener('DOMContentLoaded', () => {
             event.preventDefault();
             clearAlert(alertBox);
             clearFieldErrors(createForm);
+
+            if (!validateDueDate(createForm)) {
+                showAlert(alertBox, 'error', 'Please review the highlighted fields below.');
+                return;
+            }
+
             submitBtn.disabled = true;
 
             const payload = {
@@ -368,6 +499,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const categorySelect = document.getElementById('category_id');
         const submitBtn = document.getElementById('submit-btn');
 
+        attachDueDateValidation(editForm);
+
         async function initEditForm() {
             try {
                 await loadCategories(categorySelect, 'Select a category');
@@ -402,6 +535,12 @@ document.addEventListener('DOMContentLoaded', () => {
             event.preventDefault();
             clearAlert(alertBox);
             clearFieldErrors(editForm);
+
+            if (!validateDueDate(editForm)) {
+                showAlert(alertBox, 'error', 'Please review the highlighted fields below.');
+                return;
+            }
+
             submitBtn.disabled = true;
 
             const payload = {
