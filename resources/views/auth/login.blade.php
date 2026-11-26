@@ -12,43 +12,35 @@
         <h1 class="auth-heading">Login</h1>
 
         @if ($errors->any())
-            <div class="alert-error">
+            <x-alert type="error">
                 <ul>
                     @foreach ($errors->all() as $error)
                         <li>{{ $error }}</li>
                     @endforeach
                 </ul>
-            </div>
+            </x-alert>
         @endif
 
         <form method="POST" action="{{ route('login') }}" class="auth-form" novalidate>
             @csrf
 
-            <div class="form-group">
-                <label for="email" class="form-label">Email</label>
-                <input 
-                    type="email" 
-                    id="email" 
-                    name="email" 
-                    value="{{ old('email') }}" 
-                    class="form-input" 
-                    required 
-                    autofocus
-                >
-            </div>
+            <x-input
+                label="Email"
+                name="email"
+                type="email"
+                :value="old('email')"
+                required
+                autofocus
+            />
 
-            <div class="form-group">
-                <label for="password" class="form-label">Password</label>
-                <input 
-                    type="password" 
-                    id="password" 
-                    name="password" 
-                    class="form-input" 
-                    required
-                >
-            </div>
+            <x-input
+                label="Password"
+                name="password"
+                type="password"
+                required
+            />
 
-            <button type="submit" class="btn-primary auth-submit">Login</button>
+            <x-button type="submit" class="auth-submit">Login</x-button>
         </form>
     </div>
 </body>

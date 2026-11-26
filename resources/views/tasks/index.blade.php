@@ -3,70 +3,48 @@
 @section('title', 'My Tasks - Task Manager')
 
 @section('content')
-    <div class="page-header">
-        <div class="page-heading">
-            <h1>My Tasks</h1>
-            <p>Manage and track your tasks to stay productive.</p>
+    <div id="tasks-dashboard">
+        <div class="page-header">
+            <div class="page-heading">
+                <h1>My Tasks</h1>
+                <p>Manage and track your tasks to stay productive.</p>
+            </div>
+            <x-button :href="route('tasks.create')">New Task</x-button>
         </div>
-        <a href="{{ route('tasks.create') }}" class="btn-primary">New Task</a>
+
+        <x-alert id="dashboard-alert" class="hidden" />
+
+        <div class="filters-bar">
+            <input
+                type="text"
+                id="search-input"
+                class="form-input filter-search"
+                placeholder="Search tasks by title..."
+            >
+            <select id="category-filter" class="form-select filter-category">
+                <option value="">All Categories</option>
+            </select>
+        </div>
+
+        <div id="tasks-loading" class="empty-state">
+            <p>Loading tasks...</p>
+        </div>
+
+        <div id="tasks-empty" class="empty-state hidden">
+            <p id="tasks-empty-text">No tasks yet. Click "New Task" to create one.</p>
+        </div>
+
+        <x-table
+            id="tasks-table-wrapper"
+            class="hidden"
+            :headers="['Title', 'Category', 'Status', 'Due Date', 'Actions']"
+            body-id="tasks-table-body"
+        />
+
+        <div id="pagination-controls" class="pagination hidden">
+            <x-button variant="secondary" id="prev-page-btn">Previous</x-button>
+            <span id="pagination-info" class="pagination-info"></span>
+            <x-button variant="secondary" id="next-page-btn">Next</x-button>
+        </div>
     </div>
-
-    @if (session('success'))
-        <div class="alert-success">
-            {{ session('success') }}
-        </div>
-    @endif
-
-    @if ($tasks->isEmpty())
-        <div class="empty-state">
-            <p>No tasks yet. Click "New Task" to create one.</p>
-        </div>
-    @else
-        <div class="table-container">
-            <table class="task-table">
-                <thead>
-                    <tr>
-                        <th>Title</th>
-                        <th>Category</th>
-                        <th>Status</th>
-                        <th>Due Date</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($tasks as $task)
-                        <tr>
-                            <td>
-                                <div class="task-title">{{ $task->title }}</div>
-                                @if ($task->description)
-                                    <div class="task-desc">{{ $task->description }}</div>
-                                @endif
-                            </td>
-                            <td>
-                                <span class="badge badge-category">{{ $task->category->name }}</span>
-                            </td>
-                            <td>
-                                <span class="badge badge-{{ $task->status }}">
-                                    {{ ucfirst($task->status) }}
-                                </span>
-                            </td>
-                            <td>
-                                {{ \Carbon\Carbon::parse($task->due_date)->format('M d, Y') }}
-                            </td>
-                            <td>
-                                <div class="table-actions">
-                                    <a href="{{ route('tasks.edit', $task->id) }}" class="btn-link">Edit</a>
-                                    <form method="POST" action="{{ route('tasks.destroy', $task->id) }}" class="inline-form" onsubmit="return confirm('Are you sure you want to delete this task?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn-delete">Delete</button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-    @endif
 @endsection
